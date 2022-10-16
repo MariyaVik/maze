@@ -4,9 +4,9 @@ from pygame import *
 
 # классы
 class GameSprite(sprite.Sprite):
-    def __init__(self, sprite_image, sprite_x, sprite_y, sprite_speed):
+    def __init__(self, sprite_image, sprite_x, sprite_y, sprite_size, sprite_speed):
         super().__init__()
-        self.image = transform.scale(image.load(sprite_image), (sprite_width, sprite_height))
+        self.image = transform.scale(image.load(sprite_image), sprite_size)
         
         self.rect = self.image.get_rect()
         self.rect.x = sprite_x
@@ -16,6 +16,33 @@ class GameSprite(sprite.Sprite):
 
     def reset(self):
         window.blit(self.image, (self.rect.x, self.rect.y))
+
+
+class Player(GameSprite):
+    def update(self):
+       keys = key.get_pressed()
+       if keys[K_LEFT] and self.rect.x > 0:
+           self.rect.x -= self.speed
+       if keys[K_RIGHT] and self.rect.x < win_width - sprite_width:
+           self.rect.x += self.speed
+       if keys[K_UP] and self.rect.y > 0:
+           self.rect.y -= self.speed
+       if keys[K_DOWN] and self.rect.y < win_height - sprite_height:
+           self.rect.y += self.speed
+
+class Enemy(GameSprite):
+    direction = 'left'
+
+    def update(self):
+        if self.rect.x <= win_width * 3 / 4:
+            self.direction = 'right'
+        if self.rect.x >= win_width - sprite_width:
+            self.direction = 'left'
+
+        if self.direction == 'left':
+            self.rect.x -= self.speed
+        else:
+            self.rect.x += self.speed
 
 
 # константы
@@ -32,6 +59,7 @@ background = transform.scale(image.load("background.jpg"), (win_width, win_heigh
 player_image = 'hero.png'
 enemy_image = 'cyborg.png'
 gold_image = 'treasure.png'
+wall_image = 'wall.jpg'
 
 # звуки
 mixer.init()
@@ -40,10 +68,12 @@ mixer.music.play()
 
 
 # спрайты
-player = GameSprite(player_image, 50, 50, 5)
-enemy = GameSprite(enemy_image, 600, 200, 5)
-gold = GameSprite(gold_image, 600, 400, 0)
+player = Player(player_image, 50, 50, (sprite_width, sprite_height), 5)
+enemy = Enemy(enemy_image, 600, 200, (sprite_width, sprite_height), 3)
+gold = GameSprite(gold_image, 600, 400, (sprite_width, sprite_height), 0)
 
+wall_one = GameSprite(wall_image, 250, 10, (10, 250), 0)
+wall_two = GameSprite(wall_image, 450, 300, (10, 200), 0)
 
 # окно
 window = display.set_mode((win_width, win_height))
@@ -51,6 +81,7 @@ display.set_caption("Лабиринт")
 
 # игровой цикл
 run = True
+finish = False
 
 while run:
 
@@ -58,10 +89,19 @@ while run:
         if e.type == QUIT:
             run = False
 
-    window.blit(background,(0, 0))
-    player.reset()
-    enemy.reset()
-    gold.reset()
+    
+
+    if not finish: # if finish != True
+        player.update()
+        enemy.update()
+
+        window.blit(background,(0, 0))
+        player.reset()
+        enemy.reset()
+        gold.reset()
+
+        wall_one.reset()
+        wall_two.reset()
 
     display.update()
     clock.tick(FPS)
